@@ -1,0 +1,41 @@
+[user]
+	name = xiaojian.tan
+	email = xiaojian.tan@nufront.com
+[core]
+	excludesfile = ~/.gitignore
+	quotepath = false
+	editor = vim
+[alias]
+	co = checkout
+	ci = commit
+	br = branch
+	st = status -s
+    lp = log -p
+	unstage = reset HEAD --
+	last = log -1 HEAD
+	mg = merge
+	glog = log --pretty --graph
+	df = diff -w --no-ext-diff
+[color]
+	ui = true
+[format]
+#	pretty = oneline
+[diff]
+	tool = /usr/bin/p4merge
+#	tool = gvimdiff
+#	external = /home/fjt/bin/bcompare_git.sh
+[difftool]
+	prompt = false
+[merge]
+	tool = bc4
+#	tool = meld
+[mergetool "bc3"]
+    cmd = /usr/bin/bcompare $LOCAL $REMOTE $BASE -mergeoutput=$MERGED
+	trustExitCode = true
+[mergetool "extMerge"]
+    cmd = extMerge "$BASE" "$LOCAL" "$REMOTE" "$MERGED"  
+    trustExitCode = false  
+[mergetool "bc4"]
+	cmd = /home/fjt/bin/bcompare_merge.sh $LOCAL $REMOTE $BASE $MERGED
+	trustExitCode = true
+
