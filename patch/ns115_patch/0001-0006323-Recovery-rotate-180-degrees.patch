@@ -1,0 +1,38 @@
+From b4dd098e8fb8689aa58407bda6393f08e2c684d9 Mon Sep 17 00:00:00 2001
+From: xiehang <hang.xie@nufront.com>
+Date: Wed, 12 Dec 2012 16:03:24 +0800
+Subject: [PATCH] 0006323: Recovery rotate 180 degrees
+
+Change-Id: Ic4cff51ea5f563df255425d6e92c1c1afcd1d32d
+---
+ minui/graphics.c |   14 ++++++++++++--
+ 1 files changed, 12 insertions(+), 2 deletions(-)
+
+diff --git a/minui/graphics.c b/minui/graphics.c
+index de1cfdf..c208588 100644
+--- a/minui/graphics.c
++++ b/minui/graphics.c
+@@ -179,8 +179,18 @@ void gr_flip(void)
+ 
+     /* copy data from the in-memory surface to the buffer we're about
+      * to make active. */
+-    memcpy(gr_framebuffer[gr_active_fb].data, gr_mem_surface.data,
+-           fi.line_length * vi.yres);
++
++    /* Rotate 180 degrees */
++    int i;
++    unsigned int buffsize = fi.line_length*vi.yres;
++    for (i=0; i<buffsize; i+=PIXEL_SIZE)
++        memcpy(&gr_framebuffer[gr_active_fb].data[i],
++               &gr_mem_surface.data[buffsize-i-PIXEL_SIZE],
++               PIXEL_SIZE);
++
++    /* original */
++    /*memcpy(gr_framebuffer[gr_active_fb].data, gr_mem_surface.data,
++           fi.line_length * vi.yres); */
+ 
+     /* inform the display driver */
+     set_active_framebuffer(gr_active_fb);
+-- 
+1.7.9
+

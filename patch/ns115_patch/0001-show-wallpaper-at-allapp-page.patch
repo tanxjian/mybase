@@ -1,0 +1,67 @@
+From b04d77c5def350f7ec2e4636bbcbdae0f2c0353a Mon Sep 17 00:00:00 2001
+From: xiaojian.tan <xiaojian.tan@nufront.com>
+Date: Sun, 28 Apr 2013 16:28:21 +0800
+Subject: [PATCH] show wallpaper at allapp page
+
+---
+ .../Launcher2/res/layout/apps_customize_pane.xml   |    2 +-
+ .../src/com/android/launcher2/Launcher.java        |   10 ++++++----
+ 2 files changed, 7 insertions(+), 5 deletions(-)
+
+diff --git a/packages/apps/Launcher2/res/layout/apps_customize_pane.xml b/packages/apps/Launcher2/res/layout/apps_customize_pane.xml
+index efd29a6..b430d5d 100644
+--- a/packages/apps/Launcher2/res/layout/apps_customize_pane.xml
++++ b/packages/apps/Launcher2/res/layout/apps_customize_pane.xml
+@@ -16,7 +16,7 @@
+ <com.android.launcher2.AppsCustomizeTabHost
+     xmlns:android="http://schemas.android.com/apk/res/android"
+     xmlns:launcher="http://schemas.android.com/apk/res/com.android.launcher"
+-    android:background="#FF000000">
++    android:background="#00000000">
+     <LinearLayout
+         android:id="@+id/apps_customize_content"
+         android:orientation="vertical"
+diff --git a/packages/apps/Launcher2/src/com/android/launcher2/Launcher.java b/packages/apps/Launcher2/src/com/android/launcher2/Launcher.java
+index b19d92c..7de4bc9 100755
+--- a/packages/apps/Launcher2/src/com/android/launcher2/Launcher.java
++++ b/packages/apps/Launcher2/src/com/android/launcher2/Launcher.java
+@@ -2271,7 +2271,8 @@ public final class Launcher extends Activity
+                         hideDockDivider();
+                     }
+                     if (!animationCancelled) {
+-                        updateWallpaperVisibility(false);
++                        mWorkspace.setVisibility(View.INVISIBLE);
++                        updateWallpaperVisibility(true);
+                     }
+                 }
+ 
+@@ -2313,7 +2314,8 @@ public final class Launcher extends Activity
+                     hideDockDivider();
+                 }
+             }
+-            updateWallpaperVisibility(false);
++            mWorkspace.setVisibility(View.INVISIBLE);
++            updateWallpaperVisibility(true);
+         }
+     }
+ 
+@@ -2448,14 +2450,14 @@ public final class Launcher extends Activity
+ 
+         // Send an accessibility event to announce the context change
+         getWindow().getDecorView().sendAccessibilityEvent(AccessibilityEvent.TYPE_VIEW_SELECTED);
+-        
++/*
+         //add by zyxie@nufront.com to set allapplist background start
+             WallpaperManager wm = (WallpaperManager)
+                 getSystemService(Context.WALLPAPER_SERVICE);
+             Drawable wallpaperDrawable = wm.getDrawable();
+             mAppsCustomizeTabHost.setBackgroundDrawable(wallpaperDrawable);
+         //add by zyxie@nufront.com to set allapplist background end
+-            
++*/
+     }
+ 
+     void enterSpringLoadedDragMode() {
+-- 
+1.7.4.1
+

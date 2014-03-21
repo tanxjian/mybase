@@ -1,0 +1,26 @@
+From 8d490e68765520db84c267f5d991b473ae90f542 Mon Sep 17 00:00:00 2001
+From: "xiaojian.tan" <xiaojian.tan@nufront.com>
+Date: Mon, 22 Jul 2013 15:54:46 +0800
+Subject: [PATCH] fix blanking screen after select 'Framebuffer Console
+ support'in kernel
+
+---
+ drivers/tty/vt/vt.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/tty/vt/vt.c b/drivers/tty/vt/vt.c
+index 2156188..6819fd7 100644
+--- a/drivers/tty/vt/vt.c
++++ b/drivers/tty/vt/vt.c
+@@ -3848,7 +3848,7 @@ static void blank_screen_t(unsigned long dummy)
+ 		mod_timer(&console_timer, jiffies + (blankinterval * HZ));
+ 		return;
+ 	}
+-	blank_timer_expired = 1;
++	blank_timer_expired = 0;
+ 	schedule_work(&console_work);
+ }
+ 
+-- 
+1.7.5.4
+

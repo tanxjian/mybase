@@ -1,0 +1,51 @@
+From 4065b050fd9e95686938402953eeaa79a5023a06 Mon Sep 17 00:00:00 2001
+From: Hu jian <jian.hu@nufront.com>
+Date: Sat, 6 Apr 2013 16:26:51 +0800
+Subject: [PATCH] fix bug8834,the display is inversion when it is in recovery
+
+---
+ bootable/recovery/minui/graphics.c |   18 ++++++++++++++++--
+ 1 files changed, 16 insertions(+), 2 deletions(-)
+ mode change 100644 => 100755 bootable/recovery/minui/graphics.c
+
+diff --git a/bootable/recovery/minui/graphics.c b/bootable/recovery/minui/graphics.c
+old mode 100644
+new mode 100755
+index de1cfdf..039f25b
+--- a/bootable/recovery/minui/graphics.c
++++ b/bootable/recovery/minui/graphics.c
+@@ -110,6 +110,7 @@ static int get_framebuffer(GGLSurface *fb)
+       vi.transp.offset  = 0;
+       vi.transp.length  = 0;
+     }
++	vi.rotate  = 180;//add by hujian for novo701
+     if (ioctl(fd, FBIOPUT_VSCREENINFO, &vi) < 0) {
+         perror("failed to put fb0 info");
+         close(fd);
+@@ -179,8 +180,21 @@ void gr_flip(void)
+ 
+     /* copy data from the in-memory surface to the buffer we're about
+      * to make active. */
+-    memcpy(gr_framebuffer[gr_active_fb].data, gr_mem_surface.data,
+-           fi.line_length * vi.yres);
++    /*memcpy(gr_framebuffer[gr_active_fb].data, gr_mem_surface.data,
++           fi.line_length * vi.yres);*/
++	//modified by hujian for novo701 and just for it
++	{//it's a bad idea to do this as its efficiency is very low,change it if there is any good way to do this.
++		unsigned char *dst_fb = (unsigned char *)gr_framebuffer[gr_active_fb].data;
++		unsigned char *src_fb = (unsigned char *)gr_mem_surface.data;
++		int i,j;
++		for(i=0;i<vi.yres;i++){
++			for(j=0;j<vi.xres;j++){
++				memcpy(dst_fb + j*PIXEL_SIZE, src_fb + fi.line_length * (vi.yres - i -1) + PIXEL_SIZE*(vi.xres - j - 1),
++				PIXEL_SIZE);
++			}
++		   dst_fb += fi.line_length;
++		}
++	}
+ 
+     /* inform the display driver */
+     set_active_framebuffer(gr_active_fb);
+-- 
+1.7.5.4
+

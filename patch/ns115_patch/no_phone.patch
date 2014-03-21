@@ -1,0 +1,81 @@
+diff --git a/frameworks/base/packages/SystemUI/src/com/android/systemui/statusbar/policy/NetworkController.java b/frameworks/base/packages/SystemUI/src/com/android/systemui/statusbar/policy/NetworkController.java
+index 6606dd2..dfe5664 100644
+--- a/frameworks/base/packages/SystemUI/src/com/android/systemui/statusbar/policy/NetworkController.java
++++ b/frameworks/base/packages/SystemUI/src/com/android/systemui/statusbar/policy/NetworkController.java
+@@ -273,7 +273,7 @@ public class NetworkController extends BroadcastReceiver {
+                 mWifiIconId,
+                 mWifiActivityIconId,
+                 mContentDescriptionWifi);
+-
++/*
+         if (mIsWimaxEnabled && mWimaxConnected) {
+             // wimax is special
+             cluster.setMobileDataIndicators(
+@@ -293,6 +293,7 @@ public class NetworkController extends BroadcastReceiver {
+                     mContentDescriptionPhoneSignal,
+                     mContentDescriptionDataType);
+         }
++*/
+         cluster.setIsAirplaneMode(mAirplaneMode);
+     }
+ 
+diff --git a/packages/apps/Contacts/AndroidManifest.xml b/packages/apps/Contacts/AndroidManifest.xml
+index 8cf24d2..e9d781e 100644
+--- a/packages/apps/Contacts/AndroidManifest.xml
++++ b/packages/apps/Contacts/AndroidManifest.xml
+@@ -142,7 +142,7 @@
+             <intent-filter>
+                 <action android:name="android.intent.action.MAIN" />
+                 <category android:name="android.intent.category.DEFAULT" />
+-                <category android:name="android.intent.category.LAUNCHER" />
++                <!--category android:name="android.intent.category.LAUNCHER" /-->
+                 <category android:name="android.intent.category.BROWSABLE" />
+             </intent-filter>
+             <intent-filter>
+@@ -189,7 +189,7 @@
+             <intent-filter>
+                 <action android:name="android.intent.action.MAIN" />
+                 <category android:name="android.intent.category.DEFAULT" />
+-                <category android:name="android.intent.category.LAUNCHER" />
++                <!--category android:name="android.intent.category.LAUNCHER"/-->
+                 <category android:name="android.intent.category.BROWSABLE" />
+                 <category android:name="android.intent.category.APP_CONTACTS" />
+             </intent-filter>
+@@ -415,8 +415,8 @@
+                 <data android:mimeType="vnd.android.cursor.item/contact" />
+                 <data android:mimeType="vnd.android.cursor.item/person" />
+             </intent-filter>
+-        </activity>
+-
++    </activity>
++<!--
+         <activity-alias android:name="ContactShortcut"
+             android:targetActivity=".activities.ContactSelectionActivity"
+             android:label="@string/shortcutContact"
+@@ -455,7 +455,7 @@
+             </intent-filter>
+ 
+         </activity-alias>
+-
++-->
+         <activity android:name="CallDetailActivity"
+             android:label="@string/callDetailTitle"
+             android:theme="@style/CallDetailActivityTheme"
+@@ -603,7 +603,7 @@
+         </activity>
+ 
+         <!-- The widget that shows details and the social stream of a contact -->
+-        <receiver android:name=".socialwidget.SocialWidgetProvider"
++<!--    <receiver android:name=".socialwidget.SocialWidgetProvider"
+             android:label="@string/social_widget_label" >
+             <intent-filter>
+                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+@@ -611,7 +611,7 @@
+             <meta-data android:name="android.appwidget.provider"
+                     android:resource="@xml/social_widget_info" />
+         </receiver>
+-
++-->
+         <receiver android:name=".calllog.CallLogReceiver">
+             <intent-filter>
+                 <action android:name="android.intent.action.NEW_VOICEMAIL" />

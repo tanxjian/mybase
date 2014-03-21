@@ -1,0 +1,243 @@
+
+project device/nufront/
+diff --git a/nusmart3_pad/init.nufront-ns115-pad-ref.rc b/nusmart3_pad/init.nufront-ns115-pad-ref.rc
+index 03fb0bd..5ea7680 100644
+--- a/nusmart3_pad/init.nufront-ns115-pad-ref.rc
++++ b/nusmart3_pad/init.nufront-ns115-pad-ref.rc
+@@ -61,6 +61,9 @@ on init
+ 
+ on boot
+ 
++# start our device as default portrait, and hwrotation can be set to 0 or 270
++    setprop ro.sf.hwrotation 270
++
+ #add by chen for wifi
+     setprop wifi.interface "mlan0"
+     setprop wlan.driver.status "ok"
+
+project frameworks/base/
+diff --git a/packages/SystemUI/src/com/android/systemui/screenshot/GlobalScreenshot.java b/packages/SystemUI/src/com/android/systemui/screenshot/GlobalScreenshot.java
+index 9448bbf..4c54739 100644
+--- a/packages/SystemUI/src/com/android/systemui/screenshot/GlobalScreenshot.java
++++ b/packages/SystemUI/src/com/android/systemui/screenshot/GlobalScreenshot.java
+@@ -382,7 +382,11 @@ class GlobalScreenshot {
+         // only in the natural orientation of the device :!)
+         mDisplay.getRealMetrics(mDisplayMetrics);
+         float[] dims = {mDisplayMetrics.widthPixels, mDisplayMetrics.heightPixels};
+-        float degrees = getDegreesForRotation(mDisplay.getRotation());
++        int rot = mDisplay.getRotation();
++        // Allow for abnormal hardware orientation
++        rot = (rot + (android.os.SystemProperties.getInt("ro.sf.hwrotation", 0) / 90 )) % 4;
++        float degrees = getDegreesForRotation(rot);
++
+         boolean requiresRotation = (degrees > 0);
+         if (requiresRotation) {
+             // Get the dimensions of the device in its native orientation
+diff --git a/services/java/com/android/server/input/InputManagerService.java b/services/java/com/android/server/input/InputManagerService.java
+index bdd0aa4..3fff76a 100644
+--- a/services/java/com/android/server/input/InputManagerService.java
++++ b/services/java/com/android/server/input/InputManagerService.java
+@@ -287,7 +287,14 @@ public class InputManagerService extends IInputManager.Stub implements Watchdog.
+         if (width <= 0 || height <= 0 || externalWidth <= 0 || externalHeight <= 0) {
+             throw new IllegalArgumentException("Invalid display id or dimensions.");
+         }
+-        
++
++        // Allow for abnormal hardware orientation
++        if (android.os.SystemProperties.getInt("ro.sf.hwrotation", 0) == 270) {
++            int w = width;
++            width = height;
++            height = w;
++        }
++
+         if (DEBUG) {
+             Slog.d(TAG, "Setting display #" + displayId + " size to " + width + "x" + height
+                     + " external size " + externalWidth + "x" + externalHeight);
+@@ -299,7 +306,10 @@ public class InputManagerService extends IInputManager.Stub implements Watchdog.
+         if (rotation < Surface.ROTATION_0 || rotation > Surface.ROTATION_270) {
+             throw new IllegalArgumentException("Invalid rotation.");
+         }
+-        
++
++        // Allow for abnormal hardware orientation
++        rotation = (rotation + (android.os.SystemProperties.getInt("ro.sf.hwrotation", 0) / 90 )) % 4;
++
+         if (DEBUG) {
+             Slog.d(TAG, "Setting display #" + displayId + " orientation to rotation " + rotation
+                     + " external rotation " + externalRotation);
+diff --git a/services/java/com/android/server/wm/ScreenRotationAnimation.java b/services/java/com/android/server/wm/ScreenRotationAnimation.java
+index 938db9e..c818ba0 100644
+--- a/services/java/com/android/server/wm/ScreenRotationAnimation.java
++++ b/services/java/com/android/server/wm/ScreenRotationAnimation.java
+@@ -47,6 +47,7 @@ class ScreenRotationAnimation {
+     BlackFrame mEnteringBlackFrame;
+     int mWidth, mHeight;
+ 
++    int mSnapshotRotation;
+     int mOriginalRotation;
+     int mOriginalWidth, mOriginalHeight;
+     int mCurRotation;
+@@ -190,13 +191,26 @@ class ScreenRotationAnimation {
+         mContext = context;
+ 
+         // Screenshot does NOT include rotation!
+-        if (originalRotation == Surface.ROTATION_90
++        // Allow for abnormal hardware orientation
++        mSnapshotRotation = (4 - android.os.SystemProperties.getInt("ro.sf.hwrotation", 0) / 90) % 4;
++        if (mSnapshotRotation == Surface.ROTATION_0 || mSnapshotRotation == Surface.ROTATION_180) {
++            if (originalRotation == Surface.ROTATION_90
+                 || originalRotation == Surface.ROTATION_270) {
+-            mWidth = originalHeight;
+-            mHeight = originalWidth;
++                mWidth = originalHeight;
++                mHeight = originalWidth;
++            } else {
++                mWidth = originalWidth;
++                mHeight = originalHeight;
++            }
+         } else {
+-            mWidth = originalWidth;
+-            mHeight = originalHeight;
++            if (originalRotation == Surface.ROTATION_90
++                || originalRotation == Surface.ROTATION_270) {
++                mWidth = originalWidth;
++                mHeight = originalHeight;
++            } else {
++                mWidth = originalHeight;
++                mHeight = originalWidth;
++            }
+         }
+ 
+         mOriginalRotation = originalRotation;
+@@ -303,7 +317,7 @@ class ScreenRotationAnimation {
+         // Compute the transformation matrix that must be applied
+         // to the snapshot to make it stay in the same original position
+         // with the current screen rotation.
+-        int delta = deltaRotation(rotation, Surface.ROTATION_0);
++        int delta = deltaRotation(rotation, mSnapshotRotation);
+         createRotationMatrix(delta, mWidth, mHeight, mSnapshotInitialMatrix);
+ 
+         if (DEBUG_STATE) Slog.v(TAG, "**** ROTATION: " + delta);
+diff --git a/services/java/com/android/server/wm/WindowManagerService.java b/services/java/com/android/server/wm/WindowManagerService.java
+index 7011343..d3f2d5f 100755
+--- a/services/java/com/android/server/wm/WindowManagerService.java
++++ b/services/java/com/android/server/wm/WindowManagerService.java
+@@ -5528,6 +5528,9 @@ public class WindowManagerService extends IWindowManager.Stub
+ 
+             // The screenshot API does not apply the current screen rotation.
+             rot = mDisplay.getRotation();
++            // Allow for abnormal hardware orientation
++            rot = (rot + (SystemProperties.getInt("ro.sf.hwrotation", 0) / 90 )) % 4;
++
+             int fw = frame.width();
+             int fh = frame.height();
+ 
+
+project hardware/nufront/libcamera/
+diff --git a/ns115/NuCameraHardware.cpp b/ns115/NuCameraHardware.cpp
+index 7625e95..a632de8 100644
+--- a/ns115/NuCameraHardware.cpp
++++ b/ns115/NuCameraHardware.cpp
+@@ -18,6 +18,8 @@
+ #define LOG_NDEBUG 0
+ #define LOG_TAG "NuCameraHardware"
+ #include <utils/Log.h>
++#include <cutils/properties.h>
++#include <stdlib.h>
+ #include "NuCameraHardware.h"
+ #include <utils/threads.h>
+ #include <fcntl.h>
+@@ -1993,15 +1995,35 @@ status_t NuCameraHardware::storeMetaDataInBuffers(bool enable)
+ 
+ }
+ 
++static int getBackCameraOrientation() {
++    char value[PROPERTY_VALUE_MAX];
++    property_get("ro.sf.hwrotation", value, "0");
++    int val = atoi(value);
++    if (val == 270) {
++        return 90;
++    }
++    return 0;
++}
++
++static int getFrontCameraOrientation() {
++    char value[PROPERTY_VALUE_MAX];
++    property_get("ro.sf.hwrotation", value, "0");
++    int val = atoi(value);
++    if (val == 270) {
++        return 270;
++    }
++    return 0;
++}
++
+ static CameraInfo sCameraInfo[] = {
+     {
+         CAMERA_FACING_BACK,
+         //180,  // orientation
+-        0,  // orientation
++        getBackCameraOrientation(),  // orientation
+     },
+     {
+         CAMERA_FACING_FRONT,
+-        0,  // orientation
++        getFrontCameraOrientation(),  // orientation
+     },
+ };
+ 
+
+project hardware/nufront/libsensors/
+diff --git a/KionixSensor.cpp b/KionixSensor.cpp
+index 75b05cf..948d94e 100644
+--- a/KionixSensor.cpp
++++ b/KionixSensor.cpp
+@@ -21,13 +21,17 @@
+ #include <unistd.h>
+ #include <dirent.h>
+ #include <sys/select.h>
++#include <stdlib.h>
+ 
+ #include <cutils/log.h>
++#include <cutils/properties.h>
+ 
+ #include "KionixSensor.h"
+ 
+ /*****************************************************************************/
+ 
++static int mHWRotation = 0;
++
+ KionixSensor::KionixSensor()
+ : SensorBase(DIR_DEV, INPUT_NAME_ACC),
+       mEnabled(0),
+@@ -42,6 +46,10 @@ KionixSensor::KionixSensor()
+ 
+     mDelays = 200000000; // 200 ms by default
+ 
++    char value[PROPERTY_VALUE_MAX];
++    property_get("ro.sf.hwrotation", value, "0");
++    mHWRotation = atoi(value);
++
+     // read the actual value of all sensors if they're enabled already
+     int flags = 0;
+ 
+@@ -153,10 +161,18 @@ int KionixSensor::readEvents(sensors_event_t* data, int count)
+         if (type == EV_ABS) {
+             switch (event->code) {
+                 case EVENT_TYPE_ACCEL_X:
+-                    mPendingEvent.acceleration.x = event->value * CONVERT_A_X;
++                    if (mHWRotation == 270) {
++                        mPendingEvent.acceleration.y = -(event->value) * CONVERT_A_X;
++                    } else {
++                        mPendingEvent.acceleration.x = event->value * CONVERT_A_X;
++                    }
+                     break;
+                 case EVENT_TYPE_ACCEL_Y:
+-                    mPendingEvent.acceleration.y = event->value * CONVERT_A_Y;
++                    if (mHWRotation == 270) {
++                        mPendingEvent.acceleration.x = event->value * CONVERT_A_Y;
++                    } else {
++                        mPendingEvent.acceleration.y = event->value * CONVERT_A_Y;
++                    }
+                     break;
+                 case EVENT_TYPE_ACCEL_Z:
+                     mPendingEvent.acceleration.z = event->value * CONVERT_A_Z;
