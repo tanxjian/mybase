@@ -20,19 +20,19 @@ done
 
 #---------------------------------------------
 if [ ! -e $outdir -o ! -d $outdir ]; then
-	mkdir -pv $outdir
+	mkdir -p $outdir
 fi
 
 if [ -e $outdir -a -d $outdir ]; then
 
 	files=`git diff --name-only --diff-filter=ACMR $@`
-	#echo $files
+#	echo $files
 
 	for i in $files; do
 		path=$outdir/`dirname $i`
 		#	echo $path
 		if [ ! -e $path ]; then
-			mkdir -pv $path
+			mkdir -p $path
 		fi
 		cp -v $i $outdir/$i
 	done
